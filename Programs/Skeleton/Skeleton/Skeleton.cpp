@@ -33,7 +33,7 @@
 //=============================================================================================
 #include "framework.h"
 
-const float epsilon = 0.005;
+const float epsilon = 0.01;
 
 struct Ray {
 	vec3 start, dir;
@@ -293,72 +293,84 @@ public:
 			}
 		);
 
-		Mesh* diamond = new Mesh(
+		Mesh* octahedron = new Mesh(
 			{
-				{0.0, 0.0, 0.78},
-				{0.45, 0.45, 0.0},
-				{0.45, -0.45, 0.0},
-				{-0.45, -0.45, 0.0},
-				{-0.45, 0.45, 0.0},
-				{0.0, 0.0, -0.78}
+				{1, 0, 0},
+				{0, -1, 0},
+				{-1, 0, 0},
+				{0, 1, 0},
+				{0, 0, 1},
+				{0, 0, -1}
 			},
 			{
-				{1, 2, 3},
-				{1, 2, 5},
-				{1, 4, 3},
+				{2, 1, 5},
+				{3, 2, 5},
+				{4, 3, 5},
 				{1, 4, 5},
-				{6, 2, 3},
-				{6, 2, 5},
-				{6, 4, 3},
-				{6, 4, 5},
+				{1, 2, 6},
+				{2, 3, 6},
+				{3, 4, 6},
+				{4, 1, 6}
 			}
 		);
 
-		Mesh* cube = new Mesh(
+		Mesh* icosahedron = new Mesh(
 			{
-				{-0.5,  -0.5,  -0.5},
-				{-0.5,  -0.5,   0.5},
-				{-0.5,   0.5,  -0.5},
-				{-0.5,   0.5,   0.5},
-				{ 0.5,  -0.5,  -0.5},
-				{ 0.5,  -0.5,   0.5},
-				{ 0.5,   0.5,  -0.5},
-				{ 0.5,   0.5,   0.5}
+				{0, -0.525731,  0.850651},
+				{0.850651,  0,  0.525731},
+				{0.850651,  0, -0.525731},
+				{-0.850651,  0, -0.525731},
+				{-0.850651,  0,  0.525731},
+				{-0.525731,  0.850651,  0},
+				{0.525731,  0.850651,  0},
+				{0.525731, -0.850651,  0},
+				{-0.525731, -0.850651,  0},
+				{0, -0.525731, -0.850651},
+				{0,  0.525731, -0.850651},
+				{0,  0.525731,  0.850651}
 			},
 			{
-				{1, 7, 5},
-				{1, 3, 7},
-				{1, 4, 3},
-				{1, 2, 4},
-				{3, 8, 7},
-				{3, 4, 8},
-				{5, 7, 8},
-				{5, 8, 6},
-				{1, 5, 6},
-				{1, 6, 2},
-				{2, 6, 8},
-				{2, 8, 4}
+				{2, 3, 7},
+				{2, 8, 3},
+				{4, 5, 6},
+				{5, 4, 9},
+				{7, 6, 12},
+				{6, 7, 11},
+				{10, 11, 3},
+				{11, 10, 4},
+				{8, 9, 10},
+				{9, 8, 1},
+				{12, 1, 2},
+				{1, 12, 5},
+				{7, 3, 11},
+				{2, 7, 12},
+				{4, 6, 11},
+				{6, 5, 12},
+				{3, 8, 10},
+				{8, 2, 1},
+				{4, 10, 9},
+				{5, 9, 1}
 			}
 		);
 		outerCube->moveTo({ 1, 0, 0 });
 		outerCube->rotateZ(40 * M_PI / 180);
 
-		diamond->scaleTo(0.4);
-		diamond->moveTo({ 1.1, 0.3, -0.188 });
-		diamond->rotateZ(30 * M_PI / 180);
-		diamond->rotateY(-10 * M_PI / 180);
+		octahedron->scaleTo(0.15);
+		octahedron->moveTo({ 0.9, 0.2, -0.35 });
+		octahedron->rotateZ(30 * M_PI / 180);
+		octahedron->rotateY(-10 * M_PI / 180);
 
-		cube->scaleTo(0.3);
-		cube->moveTo({ 0.9, -0.3, -0.35 });
-		cube->rotateZ(-30 * M_PI / 180);
+		icosahedron->scaleTo(0.2);
+		icosahedron->moveTo({ 0.9, -0.2, -0.3 });
+		icosahedron->rotateZ(-30 * M_PI / 180);
 
 		outerCube->setReady();
-		diamond->setReady();
-		cube->setReady();
+		octahedron->setReady();
+		icosahedron->setReady();
 
-		objects.push_back(diamond);
+		objects.push_back(octahedron);
 		objects.push_back(outerCube);
-		objects.push_back(cube);
+		objects.push_back(icosahedron);
 
 		Hit firstHit = firstIntersect(camera.getRay(350, 530));
 		Bug* firstBug = new Bug(firstHit, 25 * M_PI / 180, 0.1, {0.6, 0, 0});
@@ -395,7 +407,7 @@ public:
 			Ray shadowRay = Ray(b->getLightSource(), hit.position - b->getLightSource());
 			Hit shadowHit = firstIntersect(shadowRay);
 			if (shadowHit.t < 0) continue;
-			if (length(hit.position - shadowHit.position) > 0.001) continue;
+			if (length(hit.position - shadowHit.position) > epsilon / 10) continue;
 			outRad = outRad + b->radianceAt(hit);
 		}
 		return outRad;
