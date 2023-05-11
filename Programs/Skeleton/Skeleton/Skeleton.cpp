@@ -18,8 +18,8 @@
 //
 // NYILATKOZAT
 // ---------------------------------------------------------------------------------------------
-// Nev    : 
-// Neptun : 
+// Nev    : Skáre Erik
+// Neptun : Z7ZF6D
 // ---------------------------------------------------------------------------------------------
 // ezennel kijelentem, hogy a feladatot magam keszitettem, es ha barmilyen segitseget igenybe vettem vagy
 // mas szellemi termeket felhasznaltam, akkor a forrast es az atvett reszt kommentekben egyertelmuen jeloltem.
@@ -32,6 +32,8 @@
 // negativ elojellel szamoljak el es ezzel parhuzamosan eljaras is indul velem szemben.
 //=============================================================================================
 #include "framework.h"
+
+const float epsilon = 0.005;
 
 struct Ray {
 	vec3 start, dir;
@@ -124,14 +126,19 @@ protected:
 class Mesh : public MoveableObject, public Intersectable {
 	std::vector<vec3> vertices;
 	std::vector<Face> faces;
+	std::vector<Plane> planes;
 
 public:
 	Mesh(std::vector<vec3> vertices, std::vector<Face> faces): vertices(vertices), faces(faces), MoveableObject() {}
+
+	void setReady() {
+		for (auto& f : faces)
+			planes.push_back(getPlaneByFace(f));
+	}
 	
 	Hit intersect(const Ray& ray) {
 		Hit result;
-		for (auto& f : faces) {
-			Plane p = getPlaneByFace(f);
+		for (auto& p : planes) {
 			Hit current = p.intersect(ray);
 			if (current.t > 0 && acceptHit(ray, current) && p.isInsidePoints(current.position) && (result.t < 0 || current.t < result.t))
 				result = current;
@@ -164,21 +171,23 @@ class Bug : public Intersectable {
 	vec3 normal;
 	float angle;
 	float height;
+	vec3 color;
+	float cosAlfa;
 
 public:
-	Bug(Hit hit, float angle, float height): angle(angle), height(height) {
-		position = hit.position;
+	Bug(Hit hit, float angle, float height, vec3 color): angle(angle), height(height), color(color) {
 		normal = normalize(hit.normal);
+		position = hit.position;
+		cosAlfa = cosf(angle);
 	}
 
 	void setToHit(const Hit& hit) {
 		if (hit.t <= 0) return;
-		position = hit.position;
 		normal = normalize(hit.normal);
+		position = hit.position;
 	}
 
 	Hit intersect(const Ray& ray) {
-		float cosAlfa = cosf(angle);
 		float a = powf(dot(ray.dir, normal), 2) - dot(ray.dir, ray.dir) * powf(cosAlfa, 2);
 		float b = 2 * dot(ray.dir, normal) * dot(ray.start - position, normal) - 2 * dot(ray.dir, ray.start - position) * powf(cosAlfa, 2);
 		float c = powf(dot(ray.start - position, normal), 2) - dot(ray.start - position, ray.start - position) * powf(cosAlfa, 2);
@@ -208,6 +217,17 @@ public:
 			}
 		}
 		return result;
+	}
+
+	vec3 getLightSource() { return position + normal * epsilon; }
+
+	vec3 getPosition() { return position; }
+
+	vec3 radianceAt(const Hit& hit) {
+		vec3 lightSource = getLightSource();
+		if (fabs(dot(normalize(hit.position - position), normal)) < cosAlfa - epsilon) return vec3(0, 0, 0);
+		if (dot(hit.position - lightSource, hit.normal) >= 0) return vec3(0, 0, 0);
+		return color * (1 / (1 + length(hit.position - lightSource)));
 	}
 };
 
@@ -240,6 +260,7 @@ public:
 class Scene {
 	Camera camera;
 	std::vector<Intersectable*> objects;
+	std::vector<Bug*> bugs;
 
 public:
 	Scene(Camera camera) : camera(camera) {}
@@ -323,22 +344,37 @@ public:
 		outerCube->rotateZ(40 * M_PI / 180);
 
 		diamond->scaleTo(0.4);
-		diamond->moveTo({ 0.9, 0.3, -0.188 });
+		diamond->moveTo({ 1.1, 0.3, -0.188 });
 		diamond->rotateZ(30 * M_PI / 180);
 		diamond->rotateY(-10 * M_PI / 180);
 
 		cube->scaleTo(0.3);
-		cube->moveTo({ 0.9, -0.3, -0.1 });
-		cube->rotateY(20 * M_PI / 180);
+		cube->moveTo({ 0.9, -0.3, -0.35 });
 		cube->rotateZ(-30 * M_PI / 180);
+
+		outerCube->setReady();
+		diamond->setReady();
+		cube->setReady();
 
 		objects.push_back(diamond);
 		objects.push_back(outerCube);
 		objects.push_back(cube);
 
-		Hit firstHit = firstIntersect(camera.getRay(250, 300));
-		Bug* firstBug = new Bug(firstHit, 25 * M_PI / 180, 0.1);
+		Hit firstHit = firstIntersect(camera.getRay(350, 530));
+		Bug* firstBug = new Bug(firstHit, 25 * M_PI / 180, 0.1, {0.6, 0, 0});
+
+		Hit secondHit = firstIntersect(camera.getRay(200, 350));
+		Bug* secondBug = new Bug(secondHit, 25 * M_PI / 180, 0.1, { 0, 0.6, 0 });
+
+		Hit thirdHit = firstIntersect(camera.getRay(400, 300));
+		Bug* thirdBug = new Bug(thirdHit, 25 * M_PI / 180, 0.1, { 0, 0, 0.6 });
+
 		objects.push_back(firstBug);
+		objects.push_back(secondBug);
+		objects.push_back(thirdBug);
+		bugs.push_back(firstBug);
+		bugs.push_back(secondBug);
+		bugs.push_back(thirdBug);
 	}
 
 	Hit firstIntersect(const Ray& ray) {
@@ -355,6 +391,13 @@ public:
 		Hit hit = firstIntersect(ray);
 		if (hit.t < 0) return { 0, 0, 0 };
 		vec3 outRad = 0.2 * (1 - dot(hit.normal, camera.getFocus())) * vec3(1, 1, 1);
+		for (auto& b : bugs) {
+			Ray shadowRay = Ray(b->getLightSource(), hit.position - b->getLightSource());
+			Hit shadowHit = firstIntersect(shadowRay);
+			if (shadowHit.t < 0) continue;
+			if (length(hit.position - shadowHit.position) > 0.001) continue;
+			outRad = outRad + b->radianceAt(hit);
+		}
 		return outRad;
 	}
 
@@ -365,6 +408,28 @@ public:
 				image[Y * camera.getWidth() + X] = vec4(color.x, color.y, color.z, 1);
 			}
 		}
+	}
+
+	void onClick(float posX, float posY) {
+		int X = camera.getWidth() * (1 + posX) / 2;
+		int Y = camera.getHeight() * (1 + posY) / 2;
+
+		Hit hit = firstIntersect(camera.getRay(X, Y));
+		if (hit.t < 0) return;
+
+		Bug* closest = nullptr;
+		for (auto& b : bugs) {
+			float dist = length(b->getPosition() - hit.position);
+			if (closest == nullptr || dist < length(closest->getPosition() - hit.position))
+				closest = b;
+		}
+
+		closest->setToHit(hit);
+	}
+
+	~Scene() {
+		for (auto o : objects)
+			delete o;
 	}
 };
 
@@ -398,25 +463,24 @@ GPUProgram gpuProgram;
 
 class FullScreenTexturedQuad {
 	unsigned int vao;
-	Texture texture;
+	unsigned int vbo;
+	int windowWidth, windowHeight;
 public:
-	FullScreenTexturedQuad(int windowWidth, int windowHeight, std::vector<vec4>& image)
-		: texture(windowWidth, windowHeight, image)
-	{
+	FullScreenTexturedQuad(int windowWidth, int windowHeight): windowWidth(windowWidth), windowHeight(windowHeight) {
 		glGenVertexArrays(1, &vao);
 		glBindVertexArray(vao);
 
-		unsigned int vbo;
 		glGenBuffers(1, &vbo);
-
 		glBindBuffer(GL_ARRAY_BUFFER, vbo);
+
 		float vertexCoords[] = { -1, -1,  1, -1,  1, 1,  -1, 1 };
 		glBufferData(GL_ARRAY_BUFFER, sizeof(vertexCoords), vertexCoords, GL_STATIC_DRAW);
 		glEnableVertexAttribArray(0);
 		glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 0, NULL);
 	}
 
-	void Draw() {
+	void Draw(std::vector<vec4>& image) {
+		Texture texture(windowWidth, windowHeight, image);
 		glBindVertexArray(vao);
 		gpuProgram.setUniform(texture, "textureUnit");
 		glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
@@ -429,55 +493,30 @@ Scene scene(Camera(windowWidth, windowHeight, { -1, 0, 0 }, { 0, 0, 0 }, 45 * M_
 void onInitialization() {
 	glViewport(0, 0, windowWidth, windowHeight);
 	scene.build();
-	std::vector<vec4> image(windowWidth * windowHeight);
-	scene.render(image);
-	fullScreenTexturedQuad = new FullScreenTexturedQuad(windowWidth, windowHeight, image);
+	fullScreenTexturedQuad = new FullScreenTexturedQuad(windowWidth, windowHeight);
 	gpuProgram.create(vertexSource, fragmentSource, "outColor");
 }
 
-// Window has become invalid: Redraw
 void onDisplay() {
-	fullScreenTexturedQuad->Draw();
-	glutSwapBuffers(); // exchange buffers for double buffering
+	std::vector<vec4> image(windowWidth * windowHeight);
+	scene.render(image);
+	fullScreenTexturedQuad->Draw(image);
+	glutSwapBuffers();
 }
 
-// Key of ASCII code pressed
-void onKeyboard(unsigned char key, int pX, int pY) {
-	if (key == 'd') glutPostRedisplay();         // if d, invalidate display, i.e. redraw
-}
+void onKeyboard(unsigned char key, int pX, int pY) { }
 
-// Key of ASCII code released
-void onKeyboardUp(unsigned char key, int pX, int pY) {
-}
+void onKeyboardUp(unsigned char key, int pX, int pY) { }
 
-// Move mouse with key pressed
-void onMouseMotion(int pX, int pY) {	// pX, pY are the pixel coordinates of the cursor in the coordinate system of the operation system
-	// Convert to normalized device space
-	float cX = 2.0f * pX / windowWidth - 1;	// flip y axis
+void onMouseMotion(int pX, int pY) { }
+
+void onMouse(int button, int state, int pX, int pY) {
+	float cX = 2.0f * pX / windowWidth - 1;
 	float cY = 1.0f - 2.0f * pY / windowHeight;
-	printf("Mouse moved to (%3.2f, %3.2f)\n", cX, cY);
-}
-
-// Mouse click event
-void onMouse(int button, int state, int pX, int pY) { // pX, pY are the pixel coordinates of the cursor in the coordinate system of the operation system
-	// Convert to normalized device space
-	float cX = 2.0f * pX / windowWidth - 1;	// flip y axis
-	float cY = 1.0f - 2.0f * pY / windowHeight;
-
-	char * buttonStat;
-	switch (state) {
-	case GLUT_DOWN: buttonStat = "pressed"; break;
-	case GLUT_UP:   buttonStat = "released"; break;
-	}
-
-	switch (button) {
-	case GLUT_LEFT_BUTTON:   printf("Left button %s at (%3.2f, %3.2f)\n", buttonStat, cX, cY);   break;
-	case GLUT_MIDDLE_BUTTON: printf("Middle button %s at (%3.2f, %3.2f)\n", buttonStat, cX, cY); break;
-	case GLUT_RIGHT_BUTTON:  printf("Right button %s at (%3.2f, %3.2f)\n", buttonStat, cX, cY);  break;
+	if (button == GLUT_LEFT_BUTTON && state == GLUT_DOWN) {
+		scene.onClick(cX, cY);
+		glutPostRedisplay();
 	}
 }
 
-// Idle event indicating that some time elapsed: do animation here
-void onIdle() {
-	long time = glutGet(GLUT_ELAPSED_TIME); // elapsed time since the start of the program
-}
+void onIdle() { }
