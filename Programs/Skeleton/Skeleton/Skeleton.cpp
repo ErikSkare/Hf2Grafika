@@ -35,6 +35,18 @@
 
 const float epsilon = 0.01;
 
+float selfMax(float a, float b) {
+	if (a > b)
+		return a;
+	return b;
+}
+
+float selfMin(float a, float b) {
+	if (a < b)
+		return a;
+	return b;
+}
+
 struct Ray {
 	vec3 start, dir;
 
@@ -196,8 +208,8 @@ public:
 
 		Hit result;
 		if(d >= 0) {
-			float t1 = max((-b - sqrtf(d)) / (2 * a), (-b + sqrtf(d)) / (2 * a));
-			float t2 = min((-b - sqrtf(d)) / (2 * a), (-b + sqrtf(d)) / (2 * a));
+			float t1 = selfMax((-b - sqrtf(d)) / (2 * a), (-b + sqrtf(d)) / (2 * a));
+			float t2 = selfMin((-b - sqrtf(d)) / (2 * a), (-b + sqrtf(d)) / (2 * a));
 
 			if (t1 > 0) {
 				vec3 hitPos = ray.start + t1 * ray.dir;
@@ -356,12 +368,12 @@ public:
 		outerCube->rotateZ(40 * M_PI / 180);
 
 		octahedron->scaleTo(0.15);
-		octahedron->moveTo({ 0.9, 0.2, -0.35 });
+		octahedron->moveTo({ 0.88, 0.2, -0.35 });
 		octahedron->rotateZ(30 * M_PI / 180);
 		octahedron->rotateY(-10 * M_PI / 180);
 
-		icosahedron->scaleTo(0.2);
-		icosahedron->moveTo({ 0.9, -0.2, -0.3 });
+		icosahedron->scaleTo(0.22);
+		icosahedron->moveTo({ 0.88, -0.22, -0.3 });
 		icosahedron->rotateZ(-30 * M_PI / 180);
 
 		outerCube->setReady();
@@ -372,15 +384,15 @@ public:
 		objects.push_back(outerCube);
 		objects.push_back(icosahedron);
 
-		Hit firstHit = firstIntersect(camera.getRay(350, 530));
-		Bug* firstBug = new Bug(firstHit, 25 * M_PI / 180, 0.1, {0.6, 0, 0});
+		Hit firstHit = firstIntersect(camera.getRay(400, 500));
+		Bug* firstBug = new Bug(firstHit, 25 * M_PI / 180, 0.1, {0, 0.6, 0});
 
 		Hit secondHit = firstIntersect(camera.getRay(200, 350));
-		Bug* secondBug = new Bug(secondHit, 25 * M_PI / 180, 0.1, { 0, 0.6, 0 });
+		Bug* secondBug = new Bug(secondHit, 25 * M_PI / 180, 0.1, { 0.6, 0, 0 });
 
 		Hit thirdHit = firstIntersect(camera.getRay(400, 300));
 		Bug* thirdBug = new Bug(thirdHit, 25 * M_PI / 180, 0.1, { 0, 0, 0.6 });
-
+		
 		objects.push_back(firstBug);
 		objects.push_back(secondBug);
 		objects.push_back(thirdBug);
@@ -500,7 +512,7 @@ public:
 };
 
 FullScreenTexturedQuad* fullScreenTexturedQuad;
-Scene scene(Camera(windowWidth, windowHeight, { -1, 0, 0 }, { 0, 0, 0 }, 45 * M_PI / 180));
+Scene scene(Camera(windowWidth, windowHeight, { -0.9, 0, 0 }, { 0, 0, 0 }, 45 * M_PI / 180));
 
 void onInitialization() {
 	glViewport(0, 0, windowWidth, windowHeight);
