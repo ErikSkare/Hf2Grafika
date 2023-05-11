@@ -1,0 +1,22 @@
+﻿  Skeleton.cpp
+C:\Users\Acer\Desktop\graf\Programs\Skeleton\Skeleton\framework.h(167,17): warning C4996: 'fopen': This function or variable may be unsafe. Consider using fopen_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+C:\Users\Acer\Desktop\graf\Programs\Skeleton\Skeleton\Skeleton.cpp(177,53): warning C4244: 'argument': conversion from 'const int' to 'float', possible loss of data
+C:\Users\Acer\Desktop\graf\Programs\Skeleton\Skeleton\Skeleton.cpp(177,76): warning C4244: 'argument': conversion from 'const int' to 'float', possible loss of data
+C:\Users\Acer\Desktop\graf\Programs\Skeleton\Skeleton\Skeleton.cpp(242,1): warning C4305: 'argument': truncation from 'double' to 'float'
+C:\Users\Acer\Desktop\graf\Programs\Skeleton\Skeleton\Skeleton.cpp(271,1): warning C4305: 'argument': truncation from 'double' to 'float'
+C:\Users\Acer\Desktop\graf\Programs\Skeleton\Skeleton\Skeleton.cpp(273,1): warning C4305: 'argument': truncation from 'double' to 'float'
+C:\Users\Acer\Desktop\graf\Programs\Skeleton\Skeleton\Skeleton.cpp(274,1): warning C4305: 'argument': truncation from 'double' to 'float'
+C:\Users\Acer\Desktop\graf\Programs\Skeleton\Skeleton\Skeleton.cpp(275,1): warning C4305: 'argument': truncation from 'double' to 'float'
+C:\Users\Acer\Desktop\graf\Programs\Skeleton\Skeleton\Skeleton.cpp(276,1): warning C4305: 'argument': truncation from 'double' to 'float'
+C:\Users\Acer\Desktop\graf\Programs\Skeleton\Skeleton\Skeleton.cpp(278,1): warning C4305: 'argument': truncation from 'double' to 'float'
+C:\Users\Acer\Desktop\graf\Programs\Skeleton\Skeleton\Skeleton.cpp(279,1): warning C4305: 'argument': truncation from 'double' to 'float'
+C:\Users\Acer\Desktop\graf\Programs\Skeleton\Skeleton\Skeleton.cpp(280,1): warning C4305: 'argument': truncation from 'double' to 'float'
+C:\Users\Acer\Desktop\graf\Programs\Skeleton\Skeleton\Skeleton.cpp(281,1): warning C4305: 'argument': truncation from 'double' to 'float'
+C:\Users\Acer\Desktop\graf\Programs\Skeleton\Skeleton\Skeleton.cpp(301,21): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+C:\Users\Acer\Desktop\graf\Programs\Skeleton\Skeleton\Skeleton.cpp(371,19): warning C4305: 'argument': truncation from 'double' to 'float'
+  Generating code
+  0 of 344 functions ( 0.0%) were compiled, the rest were copied from previous compilation.
+    0 functions were new in current compilation
+    0 functions had inline decision re-evaluated but remain unchanged
+  Finished generating code
+  Skeleton.vcxproj -> C:\Users\Acer\Desktop\graf\Programs\Skeleton\bin\Skeleton.exe
