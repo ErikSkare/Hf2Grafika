@@ -130,7 +130,7 @@ public:
 	
 	Hit intersect(const Ray& ray) {
 		Hit result;
-		for (auto f : faces) {
+		for (auto& f : faces) {
 			Plane p = getPlaneByFace(f);
 			Hit current = p.intersect(ray);
 			if (current.t > 0 && acceptHit(ray, current) && p.isInsidePoints(current.position) && (result.t < 0 || current.t < result.t))
@@ -156,6 +156,58 @@ public:
 protected:
 	bool acceptHit(const Ray& ray, const Hit& hit) {
 		return dot(ray.dir, hit.normal) > 0;
+	}
+};
+
+class Bug : public Intersectable {
+	vec3 position;
+	vec3 normal;
+	float angle;
+	float height;
+
+public:
+	Bug(Hit hit, float angle, float height): angle(angle), height(height) {
+		position = hit.position;
+		normal = normalize(hit.normal);
+	}
+
+	void setToHit(const Hit& hit) {
+		if (hit.t <= 0) return;
+		position = hit.position;
+		normal = normalize(hit.normal);
+	}
+
+	Hit intersect(const Ray& ray) {
+		float cosAlfa = cosf(angle);
+		float a = powf(dot(ray.dir, normal), 2) - dot(ray.dir, ray.dir) * powf(cosAlfa, 2);
+		float b = 2 * dot(ray.dir, normal) * dot(ray.start - position, normal) - 2 * dot(ray.dir, ray.start - position) * powf(cosAlfa, 2);
+		float c = powf(dot(ray.start - position, normal), 2) - dot(ray.start - position, ray.start - position) * powf(cosAlfa, 2);
+
+		float d = b * b - 4 * a * c;
+
+		Hit result;
+		if(d >= 0) {
+			float t1 = max((-b - sqrtf(d)) / (2 * a), (-b + sqrtf(d)) / (2 * a));
+			float t2 = min((-b - sqrtf(d)) / (2 * a), (-b + sqrtf(d)) / (2 * a));
+
+			if (t1 > 0) {
+				vec3 hitPos = ray.start + t1 * ray.dir;
+				if (dot(hitPos - position, normal) <= height && dot(hitPos - position, normal) >= 0) {
+					result.t = t1;
+					result.position = hitPos;
+					result.normal = normalize(2 * dot(hitPos - position, normal) * normal - 2 * (hitPos - position) * powf(cosAlfa, 2));
+				}
+			}
+			if(t2 > 0) {
+				vec3 hitPos = ray.start + t2 * ray.dir;
+				if (dot(hitPos - position, normal) <= height && dot(hitPos - position, normal) >= 0) {
+					result.t = t2;
+					result.position = hitPos;
+					result.normal = normalize(2 * dot(hitPos - position, normal) * normal - 2 * (hitPos - position) * powf(cosAlfa, 2));
+				}
+			}
+		}
+		return result;
 	}
 };
 
@@ -283,6 +335,10 @@ public:
 		objects.push_back(diamond);
 		objects.push_back(outerCube);
 		objects.push_back(cube);
+
+		Hit firstHit = firstIntersect(camera.getRay(250, 300));
+		Bug* firstBug = new Bug(firstHit, 25 * M_PI / 180, 0.1);
+		objects.push_back(firstBug);
 	}
 
 	Hit firstIntersect(const Ray& ray) {
@@ -291,7 +347,7 @@ public:
 			Hit hit = o->intersect(ray);
 			if (hit.t > 0 && (result.t < 0 || hit.t < result.t))  result = hit;
 		}
-		if (dot(result.normal, ray.dir) > 0) result.normal = result.normal * (-1);
+		if (dot(ray.dir, result.normal) > 0) result.normal = (-1) * result.normal;
 		return result;
 	}
 
